@@ -33,39 +33,56 @@ class TagihanController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi form
+        // 1. Validasi Inputan Admin (nama input di HTML tetap 'meteran_sekarang')
         $request->validate([
-            'pelanggan_id' => 'required', 
-            'meteran_baru' => 'required|numeric',
-            'bulan' => 'required',
-            'tahun' => 'required'
+            'pelanggan_id' => 'required',
+            'meteran_sekarang' => 'required|numeric|min:0',
         ]);
-        
-        $last = Tagihan::where('pelanggan_id', $request->pelanggan_id)
-                        ->orderBy('id', 'desc')
-                        ->first();
-                        
-        $meteranLalu = $last ? $last->meteran_baru : 0;
-        
-        // Pastikan meteran baru masuk akal
-        if ($request->meteran_baru < $meteranLalu) {
-            return back()->with('error', 'Meteran baru tidak boleh lebih kecil dari meteran lalu!');
+
+        try {
+            // 2. Cari angka meteran bulan lalu dari warga ini
+            $tagihanTerakhir = Tagihan::where('pelanggan_id', $request->pelanggan_id)
+                                      ->orderBy('id', 'desc')
+                                      ->first();
+
+            // Sesuaikan dengan nama kolom di database:
+            $meteran_lalu = $tagihanTerakhir ? $tagihanTerakhir->meteran_baru : 0;
+            $meteran_baru = $request->meteran_sekarang;
+
+            // 3. Mencegah Admin salah ketik (angka baru tidak boleh lebih kecil dari lama)
+            if ($meteran_baru < $meteran_lalu) {
+                return redirect()->back()->with('error', 'Gagal! Angka meteran terbaru tidak boleh lebih kecil dari meteran bulan lalu ('.$meteran_lalu.' M³).');
+            }
+
+            // 4. MENGHITUNG TOTAL TAGIHAN (Sesuai Aturan PAMSIMAS)
+            $total_kubik = $meteran_baru - $meteran_lalu; 
+            $tarif_per_kubik = 2000;
+            $beban_tetap = 5000;
+
+            $total_tagihan = ($total_kubik * $tarif_per_kubik) + $beban_tetap;
+
+            // 5. Simpan ke Database (Nama kolom sudah 100% sama dengan Migration)
+            Tagihan::create([
+                'pelanggan_id' => $request->pelanggan_id,
+                'bulan' => date('m'), // Mengambil angka bulan saat ini secara otomatis
+                'tahun' => date('Y'), // Mengambil angka tahun saat ini secara otomatis
+                'meteran_lalu' => $meteran_lalu,
+                'meteran_baru' => $meteran_baru,
+                'total_kubik' => $total_kubik,
+                'total_tagihan' => $total_tagihan,
+                'status' => 'belum_bayar', 
+            ]);
+
+            // Format angka menjadi bentuk Rupiah untuk ditampilkan
+            $rupiah = 'Rp ' . number_format($total_tagihan, 0, ',', '.');
+
+            return redirect()->route('admin.tagihan.index')
+                             ->with('success', 'Catatan berhasil disimpan! Total tagihan warga ini adalah ' . $rupiah);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
-
-        Tagihan::create([
-            'pelanggan_id' => $request->pelanggan_id,
-            'bulan' => $request->bulan,
-            'tahun' => $request->tahun,
-            'meteran_lalu' => $meteranLalu,
-            'meteran_baru' => $request->meteran_baru,
-            'total_kubik' => $request->meteran_baru - $meteranLalu,
-            'total_tagihan' => (($request->meteran_baru - $meteranLalu) * 2500) + 10000,
-            'status' => 'belum_bayar'
-        ]);
-
-        return redirect()->route('admin.tagihan.index')->with('success', 'Data tagihan berhasil disimpan!');
     }
-
     public function index()
     {
         // Ditambah orderBy agar tagihan terbaru selalu tampil di baris paling atas tabel

@@ -46,6 +46,10 @@ class PelangganController extends Controller
             $warga->nama = $request->nama;
             $warga->no_hp = $request->no_hp;
             $warga->alamat = $request->alamat;
+            
+            // PERBAIKAN: Generate no_pelanggan otomatis untuk pendaftaran via Admin
+            $warga->no_pelanggan = 'PLG-' . rand(10000, 99999); 
+            
             $warga->save();
 
             return redirect()->route('admin.pelanggan.index')->with('success', 'Warga baru berhasil didaftarkan ke sistem!');
@@ -98,13 +102,16 @@ class PelangganController extends Controller
     {
         try {
             $request->validate([
+                'NIK' => 'required', // WAJIB ADA
                 'nama' => 'required',
                 'no_hp' => 'required',
                 'alamat' => 'required',
             ]);
 
             $warga = new Pelanggan();
-            $warga->NIK = '999' . rand(10000000000000, 99999999999999); 
+            // GANTI BARIS INI: Ambil NIK dari inputan warga!
+            $warga->NIK = $request->NIK; 
+            
             $warga->no_pelanggan = 'PLG-' . rand(1000, 9999); 
             $warga->nama = $request->nama;
             $warga->no_hp = $request->no_hp;

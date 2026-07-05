@@ -1,191 +1,89 @@
-<?php
+@extends('layouts.admin_master')
 
-namespace App\Http\Controllers;
+@section('title', 'Tambah Warga PAMSIMAS')
 
-use App\Models\Pelanggan;
-use App\Models\Tagihan;
-use App\Models\Pembayaran;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Validator;
-
-class PelangganController extends Controller
-{
-    // =========================================================================
-    // [ADMIN] FITUR DAN KELOMPOK MENU ADMIN
-    // =========================================================================
-
-    public function index()
-    {
-        $daftarPelanggan = Pelanggan::whereNotNull('NIK')
-            ->where('NIK', '!=', '')
-            ->orderBy('nama', 'asc')
-            ->get();
+@section('content')
+<div class="container-fluid px-3 py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6"> 
             
-        return view('admin.pelanggan.index', compact('daftarPelanggan'));
-    }
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white py-4 px-4 border-0 text-center" style="background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);">
+                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Form Pendaftaran Warga Baru</h5>
+                </div>
+                
+                <div class="card-body p-4 p-md-5 bg-white">
+                    @if(session('error'))
+                        <div class="alert alert-danger rounded-3 shadow-sm mb-4 border-0 border-start border-danger border-4">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+                        </div>
+                    @endif
 
-    public function create()
-    {
-        return view('admin.pelanggan.create');
-    }
+                    <form action="{{ route('admin.pelanggan.store') }}" method="POST">
+                        @csrf
+                        
+                        <div class="row g-4"> 
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Nomor Induk Kependudukan</label>
+                                <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                    <span class="input-group-text bg-light border-0"><i class="fa-regular fa-id-card text-muted"></i></span>
+                                    <input type="number" name="NIK" class="form-control border-0 bg-light fs-6" required placeholder="Masukkan NIK valid" value="{{ old('NIK') }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Nama Lengkap</label>
+                                <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                    <span class="input-group-text bg-light border-0"><i class="fa-regular fa-user text-muted"></i></span>
+                                    <input type="text" name="nama" class="form-control border-0 bg-light fs-6" required placeholder="Sesuai KTP" value="{{ old('nama') }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Nomor HP / WhatsApp</label>
+                                <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                    <span class="input-group-text bg-light border-0"><i class="fa-brands fa-whatsapp text-muted"></i></span>
+                                    <input type="number" name="no_hp" class="form-control border-0 bg-light fs-6" required placeholder="Contoh: 081234567890" value="{{ old('no_hp') }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Alamat Lengkap</label>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                    <span class="input-group-text bg-light border-0 align-items-start pt-3"><i class="fa-solid fa-map-location-dot text-muted"></i></span>
+                                    <textarea name="alamat" class="form-control border-0 bg-light" rows="3" required placeholder="Detail alamat di Korong Padang Lariang Barat">{{ old('alamat') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
 
-    // FITUR SIMPAN YANG SUDAH DI-BYPASS VALIDASINYA AGAR TIDAK MACET
-    public function store(Request $request)
-    {
-        // 1. Validasi Manual
-        $validator = Validator::make($request->all(), [
-            'NIK' => 'required',
-            'nama' => 'required',
-            'no_hp' => 'required',
-            'alamat' => 'required',
-        ]);
+                        <hr class="text-muted my-5" style="opacity: 0.15;">
 
-        // 2. Cegah refresh diam-diam, lempar pesan eror ke kotak merah HTML
-        if ($validator->fails()) {
-            $pesanError = implode(', ', $validator->errors()->all());
-            return redirect()->back()->withInput()->with('error', 'Form belum lengkap: ' . $pesanError);
-        }
-
-        // 3. Simpan ke Database
-        try {
-            $warga = new Pelanggan();
-            $warga->NIK = $request->NIK; 
-            $warga->nama = $request->nama;
-            $warga->no_hp = $request->no_hp;
-            $warga->alamat = $request->alamat;
-            $warga->save();
-
-            return redirect()->route('admin.pelanggan.index')->with('success', 'Warga baru berhasil didaftarkan ke sistem!');
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{{ route('admin.pelanggan.index') }}" class="btn btn-light px-4 py-2 fw-bold text-secondary rounded-3 border-0 shadow-sm">Batal</a>
+                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-3 shadow-sm border-0" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+                                <i class="fa-solid fa-floppy-disk me-2"></i> Simpan Data
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
             
-        } catch (\Exception $e) {
-            // Tangkap eror MySQL (misal: NIK sudah ada, atau kolom NIK kependekan)
-            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan ke database: ' . $e->getMessage());
-        }
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        box-shadow: none;
+        background-color: #fff !important;
     }
-
-    public function setujui(Request $request, $id)
-    {
-        try {
-            $warga = Pelanggan::findOrFail($id);
-            $warga->NIK = $request->NIK ?? '13456' . rand(1000000000, 9999999999); 
-            $warga->save();
-
-            return redirect()->route('admin.pelanggan.index')->with('success', 'Data warga ' . $warga->nama . ' berhasil disetujui dan telah aktif!');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menyetujui: ' . $e->getMessage());
-        }
+    .input-group:focus-within {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+        background-color: #fff;
     }
-
-    public function destroy($id)
-    {
-        $pelanggan = Pelanggan::findOrFail($id);
-        $sessionTagihan = session('mock_tagihan', []);
-        
-        foreach ($sessionTagihan as $key => $value) {
-            if (isset($value['pelanggan_id']) && $value['pelanggan_id'] == $id) {
-                unset($sessionTagihan[$key]);
-            }
-        }
-        session(['mock_tagihan' => $sessionTagihan]);
-        $pelanggan->delete();
-
-        return redirect()->back()->with('success', 'Data warga berhasil dihapus!');
+    .input-group:focus-within .input-group-text, 
+    .input-group:focus-within .form-control {
+        background-color: #fff !important;
     }
-
-
-    // =========================================================================
-    // [WARGA] FITUR PENDAFTARAN MANDIRI & PORTAL DEPAN (VIA HP)
-    // =========================================================================
-
-    public function registerWarga()
-    {
-        return view('auth.register_warga');
-    }
-
-    public function storeRegisterWarga(Request $request)
-    {
-        try {
-            $request->validate([
-                'nama' => 'required',
-                'no_hp' => 'required',
-                'alamat' => 'required',
-            ]);
-
-            $warga = new Pelanggan();
-            $warga->NIK = null; 
-            $warga->nama = $request->nama;
-            $warga->no_hp = $request->no_hp;
-            $warga->alamat = $request->alamat;
-            $warga->save();
-
-            return redirect()->back()->with('success', 'Pendaftaran berhasil dikirim! Silakan tunggu konfirmasi Admin.');
-        } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Gagal mendaftar: ' . $e->getMessage());
-        }
-    }
-
-    public function cekTagihan()
-    {
-        return view('warga.cek_tagihan');
-    }
-
-    public function cariTagihan(Request $request)
-    {
-        $request->validate(['pencarian' => 'required']);
-        $pelanggan = Pelanggan::where('nama', 'LIKE', '%' . $request->pencarian . '%')->first();
-
-        if (!$pelanggan) {
-            return redirect()->back()->with('error', 'Data warga tidak ditemukan! Periksa kembali ejaan nama Anda.');
-        }
-
-        $sessionTagihan = session('mock_tagihan', []);
-        $tagihanData = collect($sessionTagihan)->where('pelanggan_id', $pelanggan->id)->sortByDesc('id')->first();
-
-        if (!$tagihanData) {
-            return redirect()->back()->with('error', 'Tagihan untuk warga bernama ' . $pelanggan->nama . ' belum diterbitkan.');
-        }
-
-        $tagihan = json_decode(json_encode($tagihanData));
-        $pelangganObj = isset($tagihan->pelanggan) ? $tagihan->pelanggan : $pelanggan;
-
-        return view('warga.cek_tagihan', ['pelanggan' => $pelangganObj, 'tagihan' => $tagihan]);
-    }
-
-    public function bayar(Request $request, $id)
-    {
-        $request->validate(['bukti_transfer' => 'required|image|max:2048']);
-        $tagihan = Tagihan::find($id);
-
-        if ($request->hasFile('bukti_transfer')) {
-            $file = $request->file('bukti_transfer');
-            $namaFile = 'bukti_' . $id . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/bukti_bayar'), $namaFile);
-
-            if ($tagihan) {
-                Pembayaran::create([
-                    'tagihan_id' => $tagihan->id,
-                    'tgl_bayar' => now(),
-                    'bukti_transfer' => $namaFile,
-                ]);
-                $tagihan->update(['status' => 'menunggu_verifikasi']);
-            }
-
-            $sessionTagihan = session('mock_tagihan', []);
-            if (isset($sessionTagihan[$id])) {
-                $sessionTagihan[$id]['status'] = 'menunggu_verifikasi';
-                $sessionTagihan[$id]['pembayaran'] = [
-                    'id' => rand(100, 999),
-                    'tagihan_id' => $id,
-                    'bukti_transfer' => $namaFile,
-                    'tgl_bayar' => now()->format('Y-m-d H:i:s')
-                ];
-                session(['mock_tagihan' => $sessionTagihan]);
-            }
-
-            return redirect()->back()->with('success', 'Bukti transfer berhasil dikirim!');
-        }
-
-        return redirect()->back()->with('error', 'Gagal mengunggah foto.');
-    }
-}
+</style>
+@endsection

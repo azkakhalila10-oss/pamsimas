@@ -1,104 +1,109 @@
 @extends('layouts.admin_master')
 
-@section('title', 'Catat Meteran Air Bulanan')
+@section('title', 'Catat Meteran Air')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
-            <!-- Header Card -->
-            <div class="card-header bg-dark py-3 border-0 text-center text-white fw-bold text-uppercase tracking-wide" style="background-color: #0f172a !important;">
-                FORM PENCATATAN METERAN AIR WARGA
-            </div>
+<!-- Panggil Library Pencarian di Sini Agar Tidak Diblokir -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<div class="container-fluid px-3 py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
             
-            <div class="card-body p-4 p-md-5">
-                <div class="text-secondary small fw-medium mb-4 text-center">
-                    Masukkan angka meteran air terbaru dengan teliti. Sistem akan otomatis menghitung selisih kubik dan total tarif iuran secara otomatis.
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header py-4 text-center border-0" style="background-color: #111827; color: #ffffff;">
+                    <h5 class="mb-0 fw-bold text-uppercase" style="letter-spacing: 1px;">Form Pencatatan Meteran Air Warga</h5>
                 </div>
+                
+                <div class="card-body p-4 p-md-5 bg-white">
+                    <p class="text-center text-muted mb-5 px-3">
+                        Masukkan angka meteran air terbaru dengan teliti. Sistem akan otomatis menghitung selisih kubik dan total tarif iuran secara otomatis.
+                    </p>
 
-                <!-- Notifikasi Eror (Jika Ada) -->
-                @if(session('error'))
-                    <div class="alert alert-danger shadow-sm fw-bold mb-4">⚠️ {{ session('error') }}</div>
-                @endif
-                @if(session('success'))
-                    <div class="alert alert-success shadow-sm fw-bold mb-4">✓ {{ session('success') }}</div>
-                @endif
-
-                <form action="{{ route('admin.tagihan.store') }}" method="POST">
-                    @csrf
-                    
-                    <!-- 1. Pilih Warga / Pelanggan Menggunakan NIK + FITUR CARI KETIK -->
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-dark">Pilih Kepala Keluarga / Warga</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-user"></i></span>
-                            <!-- FIX: Menghapus atribut 'required' agar tidak bentrok dengan Select2 -->
-                            <select name="pelanggan_id" class="form-select pilih-warga-cari @error('pelanggan_id') is-invalid @enderror">
-                                <option value="">-- Ketik Nama atau NIK Warga --</option>
-                                @foreach($daftarPelanggan as $p)
-                                    <option value="{{ $p->id }}" {{ old('pelanggan_id') == $p->id ? 'selected' : '' }}>
-                                        {{ $p->nama }} (NIK: {{ $p->NIK ?? '-' }})
-                                    </option>
-                                @endforeach
-                            </select>
+                    @if(session('error'))
+                        <div class="alert alert-danger rounded-3 shadow-sm mb-4 border-0 border-start border-danger border-4">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
                         </div>
-                        @error('pelanggan_id')
-                            <div class="text-danger small mt-1 fw-bold">{{ $message }}</div>
-                        @enderror
-                    </div>
+                    @endif
 
-                    <!-- 2. Bulan dan Tahun -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-dark">Bulan Periode</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-calendar-days"></i></span>
-                                <select name="bulan" class="form-select text-uppercase fw-medium">
-                                    @foreach(['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'] as $b)
-                                        <option value="{{ $b }}" {{ old('bulan', strtolower(date('F'))) == $b ? 'selected' : '' }}>{{ $b }}</option>
+                    <form action="{{ route('admin.tagihan.store') }}" method="POST">
+                        @csrf
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Pilih Kepala Keluarga / Warga</label>
+                            
+                            <!-- IKON DIKEMBALIKAN KE SINI -->
+                            <div class="input-group input-group-lg shadow-sm rounded-3">
+                                <span class="input-group-text bg-light border-0"><i class="fa-solid fa-user text-muted"></i></span>
+                                
+                                <select name="pelanggan_id" id="cariWarga" class="form-control border-0 bg-light" required>
+                                    <option value="">-- Ketik Nama atau NIK Warga --</option>
+                                    @foreach($daftarPelanggan as $warga)
+                                        <option value="{{ $warga->id }}">{{ $warga->nama }} (NIK: {{ $warga->NIK }})</option>
                                     @endforeach
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6 mt-3 mt-md-0">
-                            <label class="form-label small fw-bold text-dark">Tahun</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-calendar"></i></span>
-                                <select name="tahun" class="form-select fw-medium">
-                                    @for($i = date('Y')-1; $i <= date('Y')+1; $i++)
-                                        <option value="{{ $i }}" {{ old('tahun', date('Y')) == $i ? 'selected' : '' }}>{{ $i }}</option>
-                                    @endfor
-                                </select>
+
+                        <div class="mb-5 mt-4">
+                            <label class="form-label fw-bold text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Angka Meteran Bulan Ini (M³)</label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <span class="input-group-text bg-light border-0"><i class="fa-solid fa-gauge-high text-muted"></i></span>
+                                <input type="number" name="meteran_sekarang" class="form-control border-0 bg-light fs-6" required placeholder="Contoh: 124">
+                                <span class="input-group-text bg-light border-0 fw-bold text-secondary">M³</span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- 3. Angka Meteran Bulan Ini -->
-                    <div class="mb-5">
-                        <label class="form-label small fw-bold text-dark">Angka Meteran Bulan Ini (M³)</label>
-                        <div class="input-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
-                            <span class="input-group-text bg-light text-secondary"><i class="fa-solid fa-gauge-high"></i></span>
-                            <input type="number" name="meteran_baru" class="form-control p-2.5 @error('meteran_baru') is-invalid @enderror" placeholder="Contoh: 124" value="{{ old('meteran_baru') }}" required style="font-size: 0.95rem;">
-                            <span class="input-group-text bg-light text-dark fw-bold">M³</span>
+                        <hr class="text-muted my-4" style="opacity: 0.15;">
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{{ route('admin.tagihan.index') }}" class="btn btn-light px-4 py-2 fw-bold text-secondary rounded-3 border-0 shadow-sm">Batal</a>
+                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-3 shadow-sm border-0" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+                                <i class="fa-solid fa-floppy-disk me-2"></i> Simpan Catatan
+                            </button>
                         </div>
-                        @error('meteran_baru')
-                            <div class="text-danger small mt-1 fw-bold">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <!-- TOMBOL ACTION -->
-                    <div class="d-flex gap-3">
-                        <a href="{{ route('admin.tagihan.index') }}" class="btn btn-light border fw-semibold p-2.5 flex-grow-1 text-center text-decoration-none" style="border-radius: 8px;">
-                            ❌ Batal
-                        </a>
-                        <button type="submit" class="btn btn-primary fw-bold p-2.5 flex-grow-1" style="border-radius: 8px; background-color: #2563eb; border: none;">
-                            💾 Simpan Rekaman Meteran
-                        </button>
-                    </div>
-                </form>
-
+                    </form>
+                </div>
             </div>
+            
         </div>
     </div>
 </div>
+
+<!-- Gaya Tambahan Agar Kotak Pencarian Rapi dan Menyatu -->
+<style>
+    /* Penting agar kotak search tidak gepeng di dalam input-group */
+    .select2-container {
+        flex: 1 1 auto; 
+    }
+    /* Membuang garis tepi (border) bawaan Select2 */
+    .select2-container--default .select2-selection--single {
+        background-color: #f8f9fa !important;
+        border: none !important;
+        height: 100% !important;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        outline: none;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 0 !important;
+        color: #495057;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        top: 25% !important;
+    }
+</style>
+
+<!-- Aktifkan Pencarian Secara Paksa -->
+<script>
+    $(document).ready(function() {
+        $('#cariWarga').select2({
+            placeholder: "-- Ketik Nama atau NIK Warga --",
+            allowClear: true
+        });
+    });
+</script>
 @endsection

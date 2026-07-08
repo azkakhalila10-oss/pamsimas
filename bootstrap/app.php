@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        
+        // Mengizinkan proxy dari Railway agar sesi login tidak ter-refresh
+        $middleware->trustProxies(at: '*');
+
         // Mendaftarkan satpam (Middleware) CekRole
         $middleware->alias([
             'role' => \App\Http\Middleware\CekRole::class,
